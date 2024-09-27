@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+option csharp_namespace = "Communications";
+
+service IotService {
+	rpc GetIotHubInfo (IotHubInfoRequest) returns (IotInfoResponse);
+}
+
+message IotHubInfoRequest {}
+
+message IotInfoResponse {
+	string hostName = 1;
+}
