@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Folder Include="gRPC\protos\" />
-    <Folder Include="Azure\" />
   </ItemGroup>
 
   <ItemGroup>
