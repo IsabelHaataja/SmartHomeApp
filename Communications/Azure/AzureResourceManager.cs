@@ -74,7 +74,7 @@ public class AzureResourceManager
 
     }
 
-    public async Task<IotHubKey> GetIotHubConnectinString(string keyName = "iothubowner")
+    public async Task<IotHubKey> GetIotHubInfoAsync(string keyName = "iothubowner")
     {
         try
         {

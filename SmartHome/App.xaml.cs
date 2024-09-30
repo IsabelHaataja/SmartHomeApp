@@ -1,4 +1,5 @@
-﻿namespace SmartHome
+﻿using SmartHome.Pages;
+namespace SmartHome
 {
     public partial class App : Application
     {
