@@ -57,6 +57,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
@@ -64,6 +65,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Communications\Communications.csproj" />
+	  <ProjectReference Include="..\Resources\Resources.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
