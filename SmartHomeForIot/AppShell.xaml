@@ -16,10 +16,4 @@
             <ShellContent Title="Settings" ContentTemplate="{DataTemplate pages:SettingsPage}" />
         </Tab>
     </TabBar>
-
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
-
 </Shell>

@@ -5,6 +5,7 @@ using Communications.gRPC;
 using Microsoft.Extensions.Logging;
 using SmartHomeForIot.Pages;
 using SmartHomeForIot.ViewModels;
+using Resources.Data;
 
 namespace SmartHomeForIot
 {
@@ -19,21 +20,22 @@ namespace SmartHomeForIot
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                    fonts.AddFont("fa-regular-400.ttf", "fa-regular");
                 });
 
 
             builder.Services.AddTransient<AzureResourceManager>();
             builder.Services.AddTransient<IotHubGrpcService>();
             builder.Services.AddTransient<GrpcManager>();
+            builder.Services.AddTransient<EmailCommunication>();
 
+            builder.Services.AddTransient<DatabaseService>();
             // Home-parts could be scoped
             builder.Services.AddSingleton<HomePage>();
             builder.Services.AddSingleton<HomeViewModel>();
 
-            builder.Services.AddTransient<SettingsPage>();
-            builder.Services.AddTransient<SettingsViewModel>();
-
-            builder.Services.AddTransient<EmailCommunication>();
+            builder.Services.AddSingleton<SettingsPage>();
+            builder.Services.AddSingleton<SettingsViewModel>();
 
             builder.Logging.AddDebug();
 
