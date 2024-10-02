@@ -9,7 +9,7 @@ public class DatabaseService
     
     public DatabaseService()
     {
-        string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Smarthome_database");
+        string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Smarthome_database.db3");
         _database = new SQLiteAsyncConnection(dbPath);
         _database.CreateTableAsync<Settings>().Wait();
     }
