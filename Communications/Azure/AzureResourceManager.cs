@@ -8,19 +8,38 @@ using Azure.ResourceManager.Resources;
 using Communications.Azure.Models;
 using System.Diagnostics;
 
+
 namespace Communications.Azure;
 
 public class AzureResourceManager
 {
     ArmClient _client = null!;
-
     SubscriptionResource _subscription = null!;
-    ResourceGroupResource _currentResourceGroup = null!;
-    IotHubDescriptionResource _currentIotHub = null!;
+    ResourceGroupResource? _currentResourceGroup;
+    IotHubDescriptionResource? _currentIotHub;
     public async Task InitializeAsync()
     {
-        _client = new(new DefaultAzureCredential());
-        _subscription = await _client.GetDefaultSubscriptionAsync();
+        try
+        {
+            var credential = new AzureCliCredential();
+            _client = new ArmClient(credential);
+
+            _subscription = await _client.GetDefaultSubscriptionAsync();
+
+            if (_subscription == null)
+            {
+                throw new Exception("No subscriptions found for the given credentials.");
+            }
+            Debug.WriteLine($"Successfully authenticated with subscription: {_subscription.Data.DisplayName}");
+        }
+        catch (CredentialUnavailableException ex)
+        {
+            Debug.WriteLine($"CredentialUnavailableException: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine("An error occurred in Initialization of default subscription", ex);
+        }
     }
 
     public async Task<ResourceGroupResource> CreateResourceGroupAsync(string resourceGroupName, string location)
@@ -29,11 +48,16 @@ public class AzureResourceManager
         {
             ResourceGroupCollection resourceGroups = _subscription.GetResourceGroups();
             ResourceGroupData resourceGroupData = new(GetAzureLocation(location));
-            ArmOperation<ResourceGroupResource> operation = await resourceGroups.CreateOrUpdateAsync(WaitUntil.Completed, resourceGroupName, resourceGroupData);
+            ArmOperation<ResourceGroupResource> operation = 
+                await resourceGroups.CreateOrUpdateAsync(WaitUntil.Completed, resourceGroupName, resourceGroupData);
+
+            _currentResourceGroup = operation.Value;
+
             return operation.Value;
         }
-        catch 
+        catch (Exception ex)
         {
+            Debug.Write(ex);
             return null!;
         }
     }
@@ -43,13 +67,17 @@ public class AzureResourceManager
         try
         {
             IotHubDescriptionCollection iotHubDescriptionCollection = _currentResourceGroup.GetIotHubDescriptions();
-            IotHubDescriptionData iotHubDescriptionData = new(location, new IotHubSkuInfo(GetIotHubSku(sku)){Capacity = 1});
-            ArmOperation<IotHubDescriptionResource> operation = await iotHubDescriptionCollection.CreateOrUpdateAsync(WaitUntil.Completed, iotHubUniqueName, iotHubDescriptionData);
+            IotHubDescriptionData iotHubDescriptionData = new(location, new IotHubSkuInfo(GetIotHubSku(sku)) {Capacity = 1});
+            ArmOperation<IotHubDescriptionResource> operation = 
+                await iotHubDescriptionCollection.CreateOrUpdateAsync(WaitUntil.Completed, iotHubUniqueName, iotHubDescriptionData);
+            
             _currentIotHub = operation.Value;
+            
             return operation.Value;
         }
-        catch
-        {  
+        catch (Exception ex) 
+        {
+            Debug.Write(ex);
             return null!; 
         }
         
@@ -65,10 +93,12 @@ public class AzureResourceManager
                 await iotHubDescriptionCollection.CreateOrUpdateAsync(WaitUntil.Completed, iotHubUniqueName, iotHubDescriptionData);
         
             _currentIotHub = operation.Value;
+
             return operation.Value;
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.Write(ex);
             return null!;
         }
 
@@ -78,24 +108,30 @@ public class AzureResourceManager
     {
         try
         {
-
-            var result = await _currentIotHub.GetKeysForKeyNameAsync(keyName);
-            var value = result.Value;
-
-            var iotHubKey = new IotHubKey
+            if (_currentIotHub != null)
             {
-                HostName = _currentIotHub.Data.Name,
-                SharedAccessKeyName = value.KeyName,
-                SharedAccessKey = value.PrimaryKey
-            };
-            return iotHubKey;
+                var result = await _currentIotHub.GetKeysForKeyNameAsync(keyName);
+                var value = result.Value;
+
+                var iotHubKey = new IotHubKey
+                {
+                    HostName = _currentIotHub.Data.Name,
+                    SharedAccessKeyName = value.KeyName,
+                    SharedAccessKey = value.PrimaryKey
+                };
+
+                return iotHubKey;
+            }
+            return null!;
+
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.Write(ex);
             return null!;
         }
     }
-    public async Task<IotHubKey> GetIotHubConnectinString(IotHubDescriptionResource iotHub, string keyName = "iothubowner")
+    public async Task<IotHubKey> GetIotHubConnectionString(IotHubDescriptionResource iotHub, string keyName = "iothubowner")
     {
         try
         {
@@ -111,8 +147,9 @@ public class AzureResourceManager
 
             return iotHubKey;
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.Write(ex);
             return null!;
         }
     }

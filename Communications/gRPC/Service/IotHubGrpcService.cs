@@ -1,18 +1,12 @@
 ﻿using Communications.Azure;
 using Grpc.Core;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Communications.gRPC.Service;
 
-public class IotHubGrpcService : IotService.IotServiceBase
+public class IotHubGrpcService(AzureResourceManager azureRM) : IotService.IotServiceBase
 {
-    private AzureResourceManager _azureRM;
-
-    public IotHubGrpcService(AzureResourceManager azureRM)
-    {
-        _azureRM = azureRM;
-    }
-
+    private AzureResourceManager _azureRM = azureRM;
+   
     public override async Task<IotHubInfoResponse> GetIotHubInfo(IotHubInfoRequest request, ServerCallContext context)
     {
         var result = await _azureRM.GetIotHubInfoAsync();
