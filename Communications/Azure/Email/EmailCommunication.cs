@@ -2,11 +2,13 @@
 using Azure.Communication.Email;
 using Azure;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace Communications.Azure.Email;
 
 public class EmailCommunication
 {
+    private readonly ILogger _logger;
     private readonly string _senderAddress;
     private readonly EmailClient _client;
 
@@ -42,7 +44,7 @@ public class EmailCommunication
         }
         catch (Exception ex) 
         { 
-            Debug.WriteLine(ex, "error in Send method");
+            Debug.WriteLine(ex, "Failed to send email.");
             Debug.WriteLine($"Failed to send email: {ex.Message}");
         }
     }

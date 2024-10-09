@@ -20,14 +20,9 @@ namespace SmartHomeForIot
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-                    fonts.AddFont("fa-regular-400.ttf", "fa-regular");
-                    fonts.AddFont("fa-solid-900.ttf", "fa-solid");
-                    fonts.AddFont("fa-brands-400.ttf", "fa-brands");
-                    fonts.AddFont("Poppins-Regular.ttf", "Poppins-Regular");
-                    fonts.AddFont("Poppins-SemiBold.ttf", "Poppins-SemiBold");
-                    fonts.AddFont("Poppins-Thin.ttf", "Poppins-Thin");
                 });
 
+            //builder.Services.AddLogging();
 
             builder.Services.AddTransient<AzureResourceManager>();
             builder.Services.AddTransient<IotHubGrpcService>();
