@@ -1,5 +1,6 @@
 ﻿using SmartHomeForIot.Pages;
 using SmartHomeForIot.ViewModels;
+using System.Diagnostics;
 
 namespace SmartHomeForIot
 {
@@ -11,6 +12,5 @@ namespace SmartHomeForIot
 
             MainPage = new AppShell();
         }
-
     }
 }

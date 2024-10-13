@@ -28,8 +28,19 @@ namespace SmartHomeForIot
             builder.Services.AddTransient<IotHubGrpcService>();
             builder.Services.AddTransient<GrpcManager>();
             builder.Services.AddTransient<EmailCommunication>();
+            builder.Services.AddTransient<IDatabaseService, DatabaseService>();
+            builder.Services.AddSingleton<IotHubService>(serviceProvider =>
+            {
+                var dbContext = serviceProvider.GetRequiredService<IDatabaseService>();
+                var settingsTask = dbContext.GetSettingsAsync();
+                var settings = settingsTask.Result;
 
-            builder.Services.AddTransient<DatabaseService>();
+                if (settings != null)
+                {
+                    return new IotHubService(settings.IotHubConnectionString);
+                }
+                throw new InvalidOperationException("COuld not retreive iotHubCOnnectionString from the db.");
+            });
 
             // Home-parts could be scoped
             builder.Services.AddSingleton<HomePage>();

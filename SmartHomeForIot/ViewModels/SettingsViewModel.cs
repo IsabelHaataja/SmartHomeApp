@@ -14,30 +14,16 @@ public partial class SettingsViewModel : ObservableObject
     private readonly AzureResourceManager _azureRM;
     private readonly EmailCommunication _email;
     private readonly GrpcManager _grpcManager;
-    private readonly DatabaseService _database;
+    private readonly IDatabaseService _database;
 
-    public SettingsViewModel(DatabaseService database, AzureResourceManager azureRM, EmailCommunication email, GrpcManager grpcManager)
+    public SettingsViewModel(IDatabaseService database, AzureResourceManager azureRM, EmailCommunication email, GrpcManager grpcManager)
     {
         _database = database;
         _azureRM = azureRM;
         _email = email;
         _grpcManager = grpcManager;
-        try
-        {
-            var settings = _database.GetSettingsAsync().Result;
-            if (settings != null)
-            {
-                IsConfigured = true;
-                EmailAddress = settings.EmailAddress;
 
-            }
-
-            ConfigureButtonText = IsConfigured ? "Configured" : "Configure";
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex, "Error in SettingsViewModel constructor.");
-        }        
+        InitializeSettingsAsync();
     }
 
     [ObservableProperty]
@@ -68,17 +54,37 @@ public partial class SettingsViewModel : ObservableObject
             Debug.WriteLine(ex);
         }
     }
-
-    public async Task<bool> ConfigureSettingsAsync()
+    // tillagd 18.33
+    private async void InitializeSettingsAsync()
     {
         try
         {
             var settings = await _database.GetSettingsAsync();
+            if (settings != null)
+            {
+                IsConfigured = true;
+                EmailAddress = settings.EmailAddress;
+            }
+
+            ConfigureButtonText = IsConfigured ? "Configured" : "Configure";
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex, "Error in SettingsViewModel InitializeSettingsAsync.");
+        }
+    }
+    public async Task<bool> ConfigureSettingsAsync()
+    {
+        try
+        {
+            Debug.WriteLine("Checking existing settings...");
+            var settings = await _database.GetSettingsAsync();
             if (settings == null) 
             {
-                settings = new Resources.Data.Models.Settings
+                Debug.WriteLine("No existing settings found. Creating new settings...");
+                settings = new Resources.Data.Models.DeviceSettings
                 {
-                    AppId = Guid.NewGuid().ToString().Split('-')[0],
+                    Id = Guid.NewGuid().ToString().Split('-')[0],
                     EmailAddress = EmailAddress
                 };
 
@@ -86,14 +92,16 @@ public partial class SettingsViewModel : ObservableObject
 
                 if (iotHub == null)
                 {
-                    await _azureRM.CreateResourceGroupAsync($"rg-{settings.AppId}", "westeurope");
-                    await _azureRM.CreateIotHubAsync($"iothub-{settings.AppId}", "westeurope", "F1");
+                    await _azureRM.CreateResourceGroupAsync($"rg-{settings.Id}", "westeurope");
+                    await _azureRM.CreateIotHubAsync($"iothub-{settings.Id}", "westeurope", "F1");
                     iotHub = await _azureRM.GetIotHubInfoAsync();
                 }
-
+                Debug.WriteLine($"Generated new ID: {settings.Id} for Email: {EmailAddress}");
                 settings.IotHubConnectionString = iotHub.ConnectionString!;
+                Debug.WriteLine($"IoT Hub Connection String: {settings.IotHubConnectionString}");
 
                 var result = await _database.SaveSettingsAsync(settings);
+                Debug.WriteLine($"Save result: {result}");
 
                 return result == 1 ? true : false;
             }
