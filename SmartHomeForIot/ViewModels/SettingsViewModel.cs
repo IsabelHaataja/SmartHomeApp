@@ -38,7 +38,7 @@ public partial class SettingsViewModel : ObservableObject
     private string deviceId = string.Empty;
 
     [ObservableProperty]
-    private bool isEditMode = false;
+    private bool isEditMode;
 
     [ObservableProperty]
     private string? iotHubConnectionString;
