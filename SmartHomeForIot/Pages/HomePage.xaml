@@ -2,15 +2,49 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:SmartHomeForIot.ViewModels"
-             x:DataType="{x:Type viewmodels:HomeViewModel}"             
+             x:DataType="{x:Type viewmodels:HomeViewModel}" 
              x:Class="SmartHomeForIot.Pages.HomePage"
              Title="HomePage">
 
-    <Grid RowDefinitions="*, auto" Margin="20">
-        <VerticalStackLayout Grid.Row="0">
-            <Label Text=""  />
-            <Button Text="{Binding ToggleButtonText}" Command="{Binding ToggleDeviceStateCommand}" HorizontalOptions="Center" VerticalOptions="Center"/>
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <VerticalStackLayout Grid.Row="0"
+                             HorizontalOptions="Center"
+                             VerticalOptions="Center"
+                             Spacing="20">
+
+            <Label Text="Devices" 
+                   FontSize="Medium" 
+                   HorizontalOptions="Center" />
+
+            <Frame CornerRadius="10"
+                   Padding="15"
+                   HasShadow="True"
+                   IsVisible="{Binding IsConfigured}">
+
+                <VerticalStackLayout>
+
+                    <HorizontalStackLayout Spacing="10">
+                        <Label Text="Device type:" FontSize="14" TextColor="White"  />
+                        <Label Text="{Binding DeviceType}" FontSize="14" TextColor="White"  />
+                    </HorizontalStackLayout>
+
+                    <HorizontalStackLayout Spacing="10">
+                        <Label Text="Device ID:" FontSize="14" TextColor="White" />
+                        <Label Text="{Binding DeviceId}" FontSize="14" TextColor="White"  />
+                    </HorizontalStackLayout>
+                    
+                </VerticalStackLayout>
+            </Frame>
+
+            <BoxView HeightRequest="50" BackgroundColor="Transparent" />
+
+            <Button Text="{Binding ToggleButtonText}" Command="{Binding ToggleDeviceStateCommand}" />
+
         </VerticalStackLayout>
     </Grid>
-    
 </ContentPage>

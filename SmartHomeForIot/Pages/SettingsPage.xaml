@@ -2,18 +2,57 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:SmartHomeForIot.ViewModels"
+             xmlns:converters="clr-namespace:SmartHomeForIot.Resources.Converters"
              x:DataType="{x:Type viewmodels:SettingsViewModel}"
              x:Class="SmartHomeForIot.Pages.SettingsPage"
              >
 
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    
+    <Grid RowDefinitions="*, auto, auto, auto, auto, auto, auto" Margin="20">
 
-    <Grid RowDefinitions="*, auto" Margin="20">
         <VerticalStackLayout Grid.Row="0">
-            <Entry Text="{Binding EmailAddress}" />
-            <Label Text="{Binding IsConfigured}" />
+            <Label Text="Configuration" FontSize="Small" />
+            <Entry Text="{Binding EmailAddress}" Placeholder="Enter Email" />
+            <Button Grid.Row="1" Text="{Binding ConfigureButtonText}" Command="{Binding ConfigureCommand}" Margin="15" />
         </VerticalStackLayout>
+
+        <Label Grid.Row="1" Text="Device Settings" />
         
-        <Button Grid.Row="1" Text="{Binding ConfigureButtonText}" Command="{Binding ConfigureCommand}"/>
+        <Frame Grid.Row="2" CornerRadius="10" Padding="15" Margin="20" HasShadow="True" IsVisible="{Binding IsConfigured}">
+            <VerticalStackLayout>
+                <Label Text="IoT Hub Connection String" FontSize="Small" />
+
+                <Entry Text="{Binding IotHubConnectionString}" 
+                       IsEnabled="{Binding IsEditMode}" 
+                       Placeholder="Enter IoT Hub Connection String" />
+
+                <Label Text="Device Connection String" FontSize="Small" />
+
+                <Entry Text="{Binding DeviceConnectionString}" 
+                       IsEnabled="{Binding IsEditMode}" 
+                       Placeholder="Enter Device Connection String" />
+
+                <Label Text="Email Address" FontSize="Small" />
+                
+                <Entry Text="{Binding EmailAddress}" 
+                       IsEnabled="{Binding IsEditMode}" 
+                       Placeholder="Enter Email Address" />
+            </VerticalStackLayout>
+        </Frame>
+
+        <Button Grid.Row="3" Text="Edit Settings" Command="{Binding ToggleEditModeCommand}" Margin="15" IsVisible="{Binding IsConfigured, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+        <Button Grid.Row="4" Text="Save Settings" Command="{Binding SaveUpdatedSettingsCommand}" Margin="15" IsVisible="{Binding IsEditMode}" />
+        
+        <Button Grid.Row="5" Text="Cancel" Command="{Binding CancelEditCommand}" IsVisible="{Binding IsEditMode}" Margin="15" />
+
+        <Button Grid.Row="6" Text="Delete Device" Command="{Binding DeleteDeviceCommand}" IsVisible="{Binding IsConfigured}" IsEnabled="{Binding IsConfigured}" Margin="15" />
+        
     </Grid>
     
 </ContentPage>
