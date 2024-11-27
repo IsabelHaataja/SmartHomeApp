@@ -16,30 +16,75 @@ public class DatabaseService : IDatabaseService
     {
         _logger = logger;
 
-        string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Smarthome_database.db3");
+        string dbFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "SmarthomeDatabase");
+
+        if (!Directory.Exists(dbFolder))
+        {
+            Directory.CreateDirectory(dbFolder);
+        }
+
+        string dbPath = Path.Combine(dbFolder, "Smarthome_database.db3");
         Debug.WriteLine($"Database Path: {dbPath}");
 
         _database = new SQLiteAsyncConnection(dbPath);
-        CreateDeviceSettingsTableAsync().ConfigureAwait(false);
+    }
+
+    public async Task InitializeAsync()
+    {
+        await CreateDeviceSettingsTableAsync();
     }
     private async Task CreateDeviceSettingsTableAsync()
     {
         try
         {
-            // Await the table creation task
             var result = await _database.CreateTableAsync<DeviceSettings>();
 
             Debug.WriteLine($"Table creation result: {result}");
-            // Log to output when table creation is successful
+
             Debug.WriteLine("DeviceSettings table created successfully.");
             _logger.LogInformation("DeviceSettings table created successfully.");
         }
         catch (Exception ex)
         {
-            // Log any exception during table creation
             Debug.WriteLine($"Failed to create DeviceSettings table: {ex.Message}");
             _logger.LogError(ex, "Failed to create DeviceSettings table.");
         }
+    }
+    public async Task<string?> GetDeviceIdFromConnectionStringAsync()
+    {
+        try
+        {
+            var settings = await GetSettingsAsync();
+            var deviceConnectionString = settings.DeviceConnectionString;
+
+            if (string.IsNullOrEmpty(deviceConnectionString))
+            {
+                Console.WriteLine("Device connection string is missing in the database.");
+                return null;
+            }
+            var deviceIdPart = deviceConnectionString.Split(';')
+                .FirstOrDefault(part => part.StartsWith("DeviceId=", StringComparison.OrdinalIgnoreCase));
+
+            if (deviceIdPart == null)
+            {
+                Console.WriteLine("DeviceId not found in the device connection string.");
+                return null;
+            }
+
+            var deviceId = deviceIdPart.Split('=')[1];
+            return deviceId;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred while retrieving the DeviceId: {ex.Message}");
+            return null;
+        }
+    }
+    public async Task<string?> GetDeviceTypeAsync()
+    {
+        var settings = await GetSettingsAsync();
+        var deviceType = settings.Type;
+        return deviceType;
     }
     public Task<DeviceSettings> GetSettingsAsync()
     {
@@ -50,8 +95,18 @@ public class DatabaseService : IDatabaseService
     {
         return _database.InsertOrReplaceAsync(settings);
     }
-    public Task<int> DeleteSettingsAsync(DeviceSettings settings)
+    public async Task<int> DeleteSettingsAsync(string deviceId)
     {
-        return _database.DeleteAsync(settings);
+        // TODO - välj vad som ska tas bort, inte iothub connectionstring iaf
+        var settings = await _database.Table<DeviceSettings>()
+                               .Where(s => s.Id == deviceId)
+                               .FirstOrDefaultAsync();
+
+        if (settings != null)
+        {
+            return await _database.DeleteAsync(settings);  
+        }
+
+        return 0;
     }
 }
