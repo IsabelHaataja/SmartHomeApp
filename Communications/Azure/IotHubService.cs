@@ -1,10 +1,11 @@
-﻿using Microsoft.Azure.Devices;
+﻿using Communications.Interfaces;
+using Microsoft.Azure.Devices;
 using System.Diagnostics;
 using System.Text;
 
 namespace Communications.Azure;
 
-public class IotHubService
+public class IotHubService : IIotHubService
 {
     private readonly string _iotHubConnectionString;
     private readonly ServiceClient _serviceClient;
@@ -39,13 +40,14 @@ public class IotHubService
     //Direct method
     public async Task InvokeDeviceMethodAsync(string deviceId, string methodName)
     {
-        var methodInvocation = new CloudToDeviceMethod(methodName)
-        {
-            ResponseTimeout = TimeSpan.FromSeconds(30)
-        };
-
         try
         {
+            var methodInvocation = new CloudToDeviceMethod(methodName)
+            {
+                ResponseTimeout = TimeSpan.FromSeconds(30),
+                ConnectionTimeout = TimeSpan.FromSeconds(30)
+            };
+
             // Invoke the direct method on the device
             var response = await _serviceClient.InvokeDeviceMethodAsync(deviceId, methodInvocation);
 
