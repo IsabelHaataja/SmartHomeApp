@@ -1,7 +1,5 @@
 ﻿using Communications.Azure.Email;
 using Communications.Azure;
-using Communications.gRPC.Service;
-using Communications.gRPC;
 using Microsoft.Extensions.Logging;
 using SmartHomeForIot.Pages;
 using SmartHomeForIot.ViewModels;
@@ -25,22 +23,8 @@ namespace SmartHomeForIot
             //builder.Services.AddLogging();
 
             builder.Services.AddTransient<AzureResourceManager>();
-            builder.Services.AddTransient<IotHubGrpcService>();
-            builder.Services.AddTransient<GrpcManager>();
             builder.Services.AddTransient<EmailCommunication>();
-            builder.Services.AddTransient<IDatabaseService, DatabaseService>();
-            builder.Services.AddSingleton<IotHubService>(serviceProvider =>
-            {
-                var dbContext = serviceProvider.GetRequiredService<IDatabaseService>();
-                var settingsTask = dbContext.GetSettingsAsync();
-                var settings = settingsTask.Result;
-
-                if (settings != null)
-                {
-                    return new IotHubService(settings.IotHubConnectionString);
-                }
-                throw new InvalidOperationException("COuld not retreive iotHubCOnnectionString from the db.");
-            });
+            builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
 
             // Home-parts could be scoped
             builder.Services.AddSingleton<HomePage>();
