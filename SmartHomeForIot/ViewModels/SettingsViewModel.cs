@@ -1,11 +1,12 @@
 ﻿
 using Communications.Azure.Email;
 using Communications.Azure;
-using Communications.gRPC;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Resources.Data;
 using System.Diagnostics;
+using Communications.Interfaces;
+using DataModels = Resources.Data.Models;
 
 namespace SmartHomeForIot.ViewModels;
 
@@ -13,15 +14,13 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly AzureResourceManager _azureRM;
     private readonly EmailCommunication _email;
-    private readonly GrpcManager _grpcManager;
     private readonly IDatabaseService _database;
 
-    public SettingsViewModel(IDatabaseService database, AzureResourceManager azureRM, EmailCommunication email, GrpcManager grpcManager)
+    public SettingsViewModel(IDatabaseService database, AzureResourceManager azureRM, EmailCommunication email)
     {
         _database = database;
         _azureRM = azureRM;
         _email = email;
-        _grpcManager = grpcManager;
 
         InitializeSettingsAsync();
     }
@@ -34,6 +33,18 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private string emailAddress = null!;
+
+    [ObservableProperty]
+    private string deviceId = string.Empty;
+
+    [ObservableProperty]
+    private bool isEditMode = false;
+
+    [ObservableProperty]
+    private string? iotHubConnectionString;
+
+    [ObservableProperty]
+    private string? deviceConnectionString;
 
     [RelayCommand]
     public async Task Configure()
@@ -54,7 +65,70 @@ public partial class SettingsViewModel : ObservableObject
             Debug.WriteLine(ex);
         }
     }
-    // tillagd 18.33
+
+    [RelayCommand]
+    public async Task DeleteDevice()
+    {
+        try
+        {
+            if (IsConfigured && !string.IsNullOrEmpty(DeviceId))
+            { 
+                var settings = await _database.GetSettingsAsync();
+
+                if (settings != null && settings.Id == DeviceId)
+                {
+                    await _database.DeleteSettingsAsync(DeviceId);
+
+                    var deviceManager = new IotDeviceManager();
+
+                    await deviceManager.DeleteDeviceFromIoTHubAsync(DeviceId, settings.IotHubConnectionString);
+
+                    _email.Send(EmailAddress, $"Device with ID: {DeviceId} Deleted", "<h1>Your device has been successfully deleted!</h1>", "Your device has been deleted.");
+
+                    IsConfigured = false;
+                    ConfigureButtonText = "Configure";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex, "Error deleting the device.");
+        }
+    }
+
+    [RelayCommand]
+    public void ToggleEditMode()
+    {
+        IsEditMode = !IsEditMode;
+    }
+
+    [RelayCommand]
+    public async Task SaveUpdatedSettings()
+    {
+        try
+        {
+            var settings = await _database.GetSettingsAsync();
+            if (settings != null)
+            {
+                settings.IotHubConnectionString = IotHubConnectionString;
+                settings.DeviceConnectionString = DeviceConnectionString;
+                await _database.SaveSettingsAsync(settings);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error saving updated settings: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    public void CancelEdit()
+    {
+        IsEditMode = false;
+
+        InitializeSettingsAsync();
+    }
+
     private async void InitializeSettingsAsync()
     {
         try
@@ -64,6 +138,8 @@ public partial class SettingsViewModel : ObservableObject
             {
                 IsConfigured = true;
                 EmailAddress = settings.EmailAddress;
+                IotHubConnectionString = settings.IotHubConnectionString;
+                DeviceConnectionString = settings.DeviceConnectionString;
             }
 
             ConfigureButtonText = IsConfigured ? "Configured" : "Configure";
@@ -82,7 +158,7 @@ public partial class SettingsViewModel : ObservableObject
             if (settings == null) 
             {
                 Debug.WriteLine("No existing settings found. Creating new settings...");
-                settings = new Resources.Data.Models.DeviceSettings
+                settings = new DataModels.DeviceSettings
                 {
                     Id = Guid.NewGuid().ToString().Split('-')[0],
                     EmailAddress = EmailAddress

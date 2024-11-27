@@ -10,6 +10,7 @@ namespace SmartHomeForIot.ViewModels;
 public partial class HomeViewModel : ObservableObject
 {
     private readonly IDatabaseService _context;
+    private readonly SettingsViewModel _settingsViewModel;
     private IotHubService? _iotHubService;
 
     [ObservableProperty]
@@ -18,22 +19,46 @@ public partial class HomeViewModel : ObservableObject
     [ObservableProperty]
     private string toggleButtonText = "Turn On";
 
-    public HomeViewModel(IDatabaseService context, IotHubService iotHubService)
+    [ObservableProperty]
+    private string? deviceId;
+
+    [ObservableProperty]
+    private string? deviceType;
+
+    [ObservableProperty]
+    private bool isConfigured;
+
+    public HomeViewModel(IDatabaseService context, SettingsViewModel settingsViewModel)
     {
         _context = context;
-        _iotHubService = iotHubService;
-        InitializeIotHubServiceAsync().ConfigureAwait(false);
+        _settingsViewModel = settingsViewModel;
+
+        InitializeDeviceInfoAsync().ConfigureAwait(false);
         UpdateToggleButtonText();
 
     }
 
+    private async Task InitializeDeviceInfoAsync()
+    {
+        try
+        {
+            DeviceId = await _context.GetDeviceIdFromConnectionStringAsync();
+            DeviceType = await _context.GetDeviceTypeAsync();
+            IsConfigured = _settingsViewModel.IsConfigured;
+        }
+        catch (Exception ex)
+        {
+        }
+    }
+
+
     [RelayCommand]
     private async Task ToggleDeviceStateAsync()
     {
-        //if (_iotHubService == null)
-        //{
-        //    await InitializeIotHubServiceAsync();
-        //}
+        if (_iotHubService == null)
+        {
+            await InitializeIotHubServiceAsync();
+        }
 
         if (_iotHubService != null)
         {
@@ -60,22 +85,22 @@ public partial class HomeViewModel : ObservableObject
         ToggleButtonText = DeviceState == "On" ? "Turn Off" : "Turn On";
     }
 
-    // Simulate sending the command to the IoT device (this would invoke your IoT Hub logic)
     private async Task SendDeviceCommandAsync(string command)
     {
-        //if (_iotHubService == null)
-        //{
-        //    // Initialize IotHubService if it's not already done
-        //    await InitializeIotHubServiceAsync();
-        //}
 
         if (_iotHubService != null)
         {
-            //TODO - add device id dynamically
-            await _iotHubService.InvokeDeviceMethodAsync("AC-45ffebf0", command);
-
-            // Simulate a delay (optional)
-            await Task.Delay(500);
+            var deviceId = await _context.GetDeviceIdFromConnectionStringAsync();
+            //await _iotHubService.InvokeDeviceMethodAsync(deviceId, command);
+            if (deviceId != null)
+            {
+                await _iotHubService.SendCloudToDeviceMessageAsync(deviceId, command);
+                await Task.Delay(500);
+            }
+            else
+            {
+                Debug.WriteLine("Error: DeviceId not found in database.");
+            }
         }
         else
         {
@@ -84,24 +109,26 @@ public partial class HomeViewModel : ObservableObject
     }
     private async Task InitializeIotHubServiceAsync()
     {
-        try
+        if (_iotHubService == null)
         {
-            var deviceSettings = await _context.GetSettingsAsync(); // Assumes a method to fetch DeviceSettings
+            try
+            {
+                var deviceSettings = await _context.GetSettingsAsync();
 
-            if (deviceSettings != null && !string.IsNullOrEmpty(deviceSettings.IotHubConnectionString))
-            {
-                _iotHubService = new IotHubService(deviceSettings.IotHubConnectionString);
-                Debug.WriteLine("IotHubService initialized successfully.");
+                if (deviceSettings != null && !string.IsNullOrEmpty(deviceSettings.IotHubConnectionString))
+                {
+                    _iotHubService = new IotHubService(deviceSettings.IotHubConnectionString);
+                    Debug.WriteLine("IotHubService initialized successfully.");
+                }
+                else
+                {
+                    Debug.WriteLine("Error: IoT Hub connection string is missing or invalid.");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Debug.WriteLine("Error: IoT Hub connection string is missing or invalid.");
+                Debug.WriteLine($"Could not initialize iothubservice: {ex.Message}");
             }
         }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Could not initialize iothubservice: {ex.Message}");
-        }
-
     }
 }
