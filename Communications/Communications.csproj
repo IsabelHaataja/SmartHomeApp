@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="gRPC\protos\" />
-  </ItemGroup>
-
-  <ItemGroup>
 	  <PackageReference Include="Microsoft.Azure.Devices" Version="1.39.1" />
 	  <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Azure.Communication.Email" Version="1.0.1" />
@@ -25,9 +21,5 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
-
-	<ItemGroup>
-		<Protobuf Include="gRPC\protos\iot.proto" />
-	</ItemGroup>
 
 </Project>
