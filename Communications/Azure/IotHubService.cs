@@ -48,7 +48,6 @@ public class IotHubService : IIotHubService
                 ConnectionTimeout = TimeSpan.FromSeconds(30)
             };
 
-            // Invoke the direct method on the device
             var response = await _serviceClient.InvokeDeviceMethodAsync(deviceId, methodInvocation);
 
             Console.WriteLine($"Method {methodName} invoked on device {deviceId}, Response: {response.Status}");
@@ -64,13 +63,11 @@ public class IotHubService : IIotHubService
     {
         var commandMessage = new Message(Encoding.ASCII.GetBytes(message))
         {
-            // Set time-to-live (TTL) for the message
             ExpiryTimeUtc = DateTime.UtcNow.AddMinutes(10)
         };
 
         try
         {
-            // Send the message to the device
             await _serviceClient.SendAsync(deviceId, commandMessage);
 
             Console.WriteLine($"C2D message sent to device {deviceId}: {message}");
