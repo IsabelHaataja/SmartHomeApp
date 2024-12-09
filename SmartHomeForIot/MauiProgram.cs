@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using SmartHomeForIot.Pages;
 using SmartHomeForIot.ViewModels;
 using Resources.Data;
+using Communications.Interfaces;
 
 namespace SmartHomeForIot
 {
@@ -20,13 +21,11 @@ namespace SmartHomeForIot
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-            //builder.Services.AddLogging();
-
             builder.Services.AddTransient<AzureResourceManager>();
             builder.Services.AddTransient<EmailCommunication>();
             builder.Services.AddSingleton<IDatabaseService, DatabaseService>();
+            builder.Services.AddSingleton<IIotDeviceManager, IotDeviceManager>();
 
-            // Home-parts could be scoped
             builder.Services.AddSingleton<HomePage>();
             builder.Services.AddSingleton<HomeViewModel>();
 
