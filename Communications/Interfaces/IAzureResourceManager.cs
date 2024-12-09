@@ -11,7 +11,6 @@ namespace Communications.Interfaces
         Task<IotHubDescriptionResource> CreateIotHubAsync(ResourceGroupResource resourceGroup, string iotHubUniqueName, string location, string sku);
         Task<IotHubDescriptionResource> CreateIotHubAsync(string iotHubUniqueName, string location, string sku);
         Task<ResourceGroupResource> CreateResourceGroupAsync(string resourceGroupName, string location);
-        Task DeleteDeviceAsync(string id);
         AzureLocation GetAzureLocation(string location);
         Task<IotHubKey> GetIotHubConnectionString(IotHubDescriptionResource iotHub, string keyName = "iothubowner");
         Task<IotHubKey> GetIotHubInfoAsync(string keyName = "iothubowner");

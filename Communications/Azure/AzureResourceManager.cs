@@ -174,9 +174,4 @@ public class AzureResourceManager : IAzureResourceManager
             _ => IotHubSku.S1
         };
     }
-
-    public async Task DeleteDeviceAsync(string id)
-    {
-
-    }
 }
