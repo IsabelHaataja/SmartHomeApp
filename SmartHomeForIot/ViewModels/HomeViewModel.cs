@@ -3,6 +3,7 @@ using Communications.Azure;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Resources.Data;
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace SmartHomeForIot.ViewModels;
@@ -17,7 +18,7 @@ public partial class HomeViewModel : ObservableObject
     private string deviceState = "Off";
 
     [ObservableProperty]
-    private string toggleButtonText = "Turn On";
+    private string toggleButtonText = "Off";
 
     [ObservableProperty]
     private string? deviceId;
@@ -33,9 +34,18 @@ public partial class HomeViewModel : ObservableObject
         _context = context;
         _settingsViewModel = settingsViewModel;
 
-        InitializeDeviceInfoAsync().ConfigureAwait(false);
-        UpdateToggleButtonText();
+        _settingsViewModel.PropertyChanged += OnSettingsViewModelPropertyChanged;
 
+        if (_settingsViewModel.IsConfigured)
+        {
+            InitializeDeviceInfoAsync().ConfigureAwait(false);
+            UpdateToggleButtonText();
+        }
+        else
+        {
+            DeviceState = "Off";
+            ToggleButtonText = "Configure Your Device";
+        }
     }
 
     private async Task InitializeDeviceInfoAsync()
@@ -51,6 +61,22 @@ public partial class HomeViewModel : ObservableObject
         }
     }
 
+    private void OnSettingsViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SettingsViewModel.IsConfigured))
+        {
+            if (_settingsViewModel.IsConfigured)
+            {
+                InitializeDeviceInfoAsync().ConfigureAwait(false);
+                UpdateToggleButtonText();
+            }
+            else
+            {
+                DeviceState = "Off";
+                ToggleButtonText = "Configure Your Device";
+            }
+        }
+    }
 
     [RelayCommand]
     private async Task ToggleDeviceStateAsync()
@@ -91,7 +117,7 @@ public partial class HomeViewModel : ObservableObject
         if (_iotHubService != null)
         {
             var deviceId = await _context.GetDeviceIdFromConnectionStringAsync();
-            //await _iotHubService.InvokeDeviceMethodAsync(deviceId, command);
+
             if (deviceId != null)
             {
                 await _iotHubService.SendCloudToDeviceMessageAsync(deviceId, command);
