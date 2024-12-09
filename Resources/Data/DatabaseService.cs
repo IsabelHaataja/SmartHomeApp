@@ -33,6 +33,7 @@ public class DatabaseService : IDatabaseService
     {
         await CreateDeviceSettingsTableAsync();
     }
+
     private async Task CreateDeviceSettingsTableAsync()
     {
         try
@@ -50,6 +51,60 @@ public class DatabaseService : IDatabaseService
             _logger.LogError(ex, "Failed to create DeviceSettings table.");
         }
     }
+
+    public async Task<string> GetIotHubConnectionStringAsync()
+    {
+        try
+        {
+            // Fetch settings from the database
+            var response = await GetSettingsAsync();
+            var connectionString = response?.IotHubConnectionString ?? string.Empty;
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Debug.WriteLine("IoT Hub connection string is empty or null.");
+                return string.Empty;
+            }
+
+            // Extract HostName from the connection string
+            var hostNamePart = connectionString.Split(';')
+                .FirstOrDefault(part => part.StartsWith("HostName=", StringComparison.OrdinalIgnoreCase));
+
+            if (hostNamePart == null)
+            {
+                Debug.WriteLine("HostName is missing in the IoT Hub connection string.");
+                return string.Empty;
+            }
+
+            // Extract the actual HostName value
+            var hostName = hostNamePart.Split('=')[1];
+
+            // Check if HostName ends with ".azure-devices.net", and append if missing
+            if (!hostName.EndsWith(".azure-devices.net", StringComparison.OrdinalIgnoreCase))
+            {
+                Debug.WriteLine($"HostName before fix: {hostName}");
+
+                // Append ".azure-devices.net" to the HostName
+                hostName += ".azure-devices.net";
+
+                // Rebuild the connection string with the corrected HostName
+                var updatedHostNamePart = $"HostName={hostName}";
+                connectionString = connectionString.Replace(hostNamePart, updatedHostNamePart);
+
+                Debug.WriteLine($"HostName after fix: {hostName}");
+            }
+
+            Debug.WriteLine($"Final IoT Hub connection string: {connectionString}");
+
+            return connectionString;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred while getting the IoT Hub connection string.");
+            return string.Empty;
+        }
+    }
+
     public async Task<string?> GetDeviceIdFromConnectionStringAsync()
     {
         try
@@ -97,13 +152,18 @@ public class DatabaseService : IDatabaseService
     }
     public async Task<int> DeleteSettingsAsync(string deviceId)
     {
-        // TODO - välj vad som ska tas bort, inte iothub connectionstring iaf
         var settings = await _database.Table<DeviceSettings>()
                                .Where(s => s.Id == deviceId)
                                .FirstOrDefaultAsync();
 
         if (settings != null)
         {
+            settings.Id = null;
+            settings.Type = null;
+            settings.EmailAddress = null;
+            settings.DeviceConnectionString = null;
+            settings.IotHubConnectionString = null;
+
             return await _database.DeleteAsync(settings);  
         }
 

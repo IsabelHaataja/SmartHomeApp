@@ -7,6 +7,7 @@ namespace Resources.Data
         Task<int> DeleteSettingsAsync(string deviceId);
         Task<DeviceSettings> GetSettingsAsync();
         Task<int> SaveSettingsAsync(DeviceSettings settings);
+        Task<string> GetIotHubConnectionStringAsync();
         Task<string?> GetDeviceIdFromConnectionStringAsync();
         Task<string?> GetDeviceTypeAsync();
     }
