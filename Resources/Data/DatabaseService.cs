@@ -11,22 +11,24 @@ public class DatabaseService : IDatabaseService
 {
     private readonly ILogger<DatabaseService> _logger;
     private SQLiteAsyncConnection _database;
+    private readonly string _dbFolder;
+    private readonly string _dbPath;
 
     public DatabaseService(ILogger<DatabaseService> logger)
     {
         _logger = logger;
 
-        string dbFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "SmarthomeDatabase");
+        _dbFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "SmarthomeDatabase");
 
-        if (!Directory.Exists(dbFolder))
+        if (!Directory.Exists(_dbFolder))
         {
-            Directory.CreateDirectory(dbFolder);
+            Directory.CreateDirectory(_dbFolder);
         }
 
-        string dbPath = Path.Combine(dbFolder, "Smarthome_database.db3");
-        Debug.WriteLine($"Database Path: {dbPath}");
+        _dbPath = Path.Combine(_dbFolder, "Smarthome_database.db3");
+        Debug.WriteLine($"Database Path: {_dbPath}");
 
-        _database = new SQLiteAsyncConnection(dbPath);
+        _database = new SQLiteAsyncConnection(_dbPath);
     }
 
     public async Task InitializeAsync()
@@ -150,6 +152,7 @@ public class DatabaseService : IDatabaseService
     {
         return _database.InsertOrReplaceAsync(settings);
     }
+
     public async Task<int> DeleteSettingsAsync(string deviceId)
     {
         var settings = await _database.Table<DeviceSettings>()
@@ -168,5 +171,33 @@ public class DatabaseService : IDatabaseService
         }
 
         return 0;
+    }
+    public async Task DeleteDatabaseAndFolderAsync()
+    {
+        try
+        {
+            // Close SQLite connection
+            if (_database != null)
+            {
+                await _database.CloseAsync();
+                Debug.WriteLine("Database connection closed.");
+            }
+
+            if (File.Exists(_dbPath))
+            {
+                File.Delete(_dbPath);
+                Debug.WriteLine("Database file deleted.");
+            }
+
+            if (Directory.Exists(_dbFolder))
+            {
+                Directory.Delete(_dbFolder, true);
+                Debug.WriteLine("Database folder deleted.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error deleting database or folder: {ex.Message}");
+        }
     }
 }

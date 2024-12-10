@@ -10,5 +10,6 @@ namespace Resources.Data
         Task<string> GetIotHubConnectionStringAsync();
         Task<string?> GetDeviceIdFromConnectionStringAsync();
         Task<string?> GetDeviceTypeAsync();
+        Task DeleteDatabaseAndFolderAsync();
     }
 }
