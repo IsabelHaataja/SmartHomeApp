@@ -7,26 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="gRPC\protos\" />
-  </ItemGroup>
-
-  <ItemGroup>
+	  <PackageReference Include="Microsoft.Azure.Devices" Version="1.39.1" />
 	  <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Azure.Communication.Email" Version="1.0.1" />
     <PackageReference Include="Azure.Identity" Version="1.12.1" />
     <PackageReference Include="Azure.ResourceManager" Version="1.13.0" />
     <PackageReference Include="Azure.ResourceManager.IotHub" Version="1.1.1" />
-    <PackageReference Include="Google.Protobuf" Version="3.28.2" />
-    <PackageReference Include="Grpc.Core" Version="2.46.6" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.66.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.66.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+	<PackageReference Include="Azure.Core" Version="1.42.0" />
   </ItemGroup>
-
-	<ItemGroup>
-		<Protobuf Include="gRPC\protos\iot.proto" />
-	</ItemGroup>
 
 </Project>

@@ -1,11 +1,12 @@
 ﻿
 using Communications.Azure.Email;
 using Communications.Azure;
-using Communications.gRPC;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Resources.Data;
 using System.Diagnostics;
+using Communications.Interfaces;
+using DataModels = Resources.Data.Models;
 
 namespace SmartHomeForIot.ViewModels;
 
@@ -13,31 +14,17 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly AzureResourceManager _azureRM;
     private readonly EmailCommunication _email;
-    private readonly GrpcManager _grpcManager;
-    private readonly DatabaseService _database;
+    private readonly IDatabaseService _database;
+    private readonly IIotDeviceManager _iotDeviceManager;
 
-    public SettingsViewModel(DatabaseService database, AzureResourceManager azureRM, EmailCommunication email, GrpcManager grpcManager)
+    public SettingsViewModel(IDatabaseService database, AzureResourceManager azureRM, EmailCommunication email, IIotDeviceManager iotDeviceManager)
     {
         _database = database;
         _azureRM = azureRM;
         _email = email;
-        _grpcManager = grpcManager;
-        try
-        {
-            var settings = _database.GetSettingsAsync().Result;
-            if (settings != null)
-            {
-                IsConfigured = true;
-                EmailAddress = settings.EmailAddress;
+        _iotDeviceManager = iotDeviceManager;
 
-            }
-
-            ConfigureButtonText = IsConfigured ? "Configured" : "Configure";
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex, "Error in SettingsViewModel constructor.");
-        }        
+        InitializeSettingsAsync();
     }
 
     [ObservableProperty]
@@ -48,6 +35,25 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private string emailAddress = null!;
+
+    [ObservableProperty]
+    private string deviceId = string.Empty;
+
+    [ObservableProperty]
+    private bool isEditMode;
+
+    [ObservableProperty]
+    private string? iotHubConnectionString;
+
+    [ObservableProperty]
+    private string? deviceConnectionString;
+
+    private string _statusMessage;
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set => SetProperty(ref _statusMessage, value);
+    }
 
     [RelayCommand]
     public async Task Configure()
@@ -62,6 +68,9 @@ public partial class SettingsViewModel : ObservableObject
 
             if (IsConfigured)
                 _email.Send(EmailAddress, "Azure IotHub Resources Created", "<h1>Your Azure IotHub was created successfully!</h1>", "Your Azure IotHub was created successfully!");
+
+            ConfigureButtonText = "Configured";
+            IsConfigured = true;
         }
         catch (Exception ex)
         {
@@ -69,16 +78,137 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    public async Task<bool> ConfigureSettingsAsync()
+    [RelayCommand]
+    public async Task DeleteDevice()
+    {
+
+        try
+        {
+            if (IsConfigured)
+            {
+                Debug.WriteLine("Retrieving DeviceId from the connection string...");
+
+                // Retrieve the DeviceId from the connection string
+                var deviceId = await _database.GetDeviceIdFromConnectionStringAsync();
+
+                if (string.IsNullOrEmpty(deviceId))
+                {
+                    Debug.WriteLine("DeviceId is null or empty. Aborting deletion.");
+                    return;
+                }
+
+                Debug.WriteLine($"Attempting to delete DeviceId: {deviceId}");
+
+                var iotHubConnectionString = await _database.GetIotHubConnectionStringAsync();
+
+                if (string.IsNullOrEmpty(iotHubConnectionString))
+                {
+                    Debug.WriteLine("IoT Hub connection string is null or empty. Aborting deletion.");
+                    return;
+                }
+
+                await _iotDeviceManager.DeleteDeviceFromIoTHubAsync(deviceId, iotHubConnectionString);
+
+                Debug.WriteLine("Deleting settings...");
+
+                // Retrieve settings from the database
+                var settings = await _database.GetSettingsAsync();
+                if (settings != null)
+                {
+                    await _database.DeleteSettingsAsync(settings.Id);
+                }
+
+                _database.DeleteDatabaseAndFolderAsync();
+
+                _email.Send(EmailAddress, $"Device with ID: {deviceId} Deleted", "<h1>Your device has been successfully deleted!</h1>", "Your device has been deleted.");
+
+                // Reset state
+                IsConfigured = false;
+                ConfigureButtonText = "Configure";
+
+                Debug.WriteLine("Device deleted successfully.");
+
+                StatusMessage = "Device deleted. Restart app to configure device.";
+
+            }
+            else
+            {
+                Debug.WriteLine("System is not configured. Aborting deletion.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error deleting the device: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    public void ToggleEditMode()
+    {
+        IsEditMode = !IsEditMode;
+    }
+
+    [RelayCommand]
+    public async Task SaveUpdatedSettings()
     {
         try
         {
             var settings = await _database.GetSettingsAsync();
+            if (settings != null)
+            {
+                settings.IotHubConnectionString = IotHubConnectionString;
+                settings.DeviceConnectionString = DeviceConnectionString;
+                settings.EmailAddress = EmailAddress;
+                await _database.SaveSettingsAsync(settings);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error saving updated settings: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    public void CancelEdit()
+    {
+        IsEditMode = false;
+
+        InitializeSettingsAsync();
+    }
+
+    private async void InitializeSettingsAsync()
+    {
+        try
+        {
+            var settings = await _database.GetSettingsAsync();
+            if (settings != null)
+            {
+                IsConfigured = true;
+                DeviceId = await _database.GetDeviceIdFromConnectionStringAsync();
+                EmailAddress = settings.EmailAddress;
+                IotHubConnectionString = await _database.GetIotHubConnectionStringAsync();
+                DeviceConnectionString = settings.DeviceConnectionString;
+            }
+
+            ConfigureButtonText = IsConfigured ? "Configured" : "Configure";
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex, "Error initializing settings.");
+        }
+    }
+    public async Task<bool> ConfigureSettingsAsync()
+    {
+        try
+        {
+            Debug.WriteLine("Checking existing settings...");
+            var settings = await _database.GetSettingsAsync();
             if (settings == null) 
             {
-                settings = new Resources.Data.Models.Settings
+                Debug.WriteLine("No existing settings found. Creating new settings...");
+                settings = new DataModels.DeviceSettings
                 {
-                    AppId = Guid.NewGuid().ToString().Split('-')[0],
+                    Id = Guid.NewGuid().ToString().Split('-')[0],
                     EmailAddress = EmailAddress
                 };
 
@@ -86,14 +216,16 @@ public partial class SettingsViewModel : ObservableObject
 
                 if (iotHub == null)
                 {
-                    await _azureRM.CreateResourceGroupAsync($"rg-{settings.AppId}", "westeurope");
-                    await _azureRM.CreateIotHubAsync($"iothub-{settings.AppId}", "westeurope", "F1");
+                    await _azureRM.CreateResourceGroupAsync($"rg-{settings.Id}", "westeurope");
+                    await _azureRM.CreateIotHubAsync($"iothub-{settings.Id}", "westeurope", "F1");
                     iotHub = await _azureRM.GetIotHubInfoAsync();
                 }
-
+                Debug.WriteLine($"Generated new ID: {settings.Id} for Email: {EmailAddress}");
                 settings.IotHubConnectionString = iotHub.ConnectionString!;
+                Debug.WriteLine($"IoT Hub Connection String: {settings.IotHubConnectionString}");
 
                 var result = await _database.SaveSettingsAsync(settings);
+                Debug.WriteLine($"Save result: {result}");
 
                 return result == 1 ? true : false;
             }

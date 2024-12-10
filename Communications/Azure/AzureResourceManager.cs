@@ -6,12 +6,13 @@ using Azure.ResourceManager.IotHub;
 using Azure.ResourceManager.IotHub.Models;
 using Azure.ResourceManager.Resources;
 using Communications.Azure.Models;
+using Communications.Interfaces;
 using System.Diagnostics;
 
 
 namespace Communications.Azure;
 
-public class AzureResourceManager
+public class AzureResourceManager : IAzureResourceManager
 {
     ArmClient _client = null!;
     SubscriptionResource _subscription = null!;
@@ -48,7 +49,7 @@ public class AzureResourceManager
         {
             ResourceGroupCollection resourceGroups = _subscription.GetResourceGroups();
             ResourceGroupData resourceGroupData = new(GetAzureLocation(location));
-            ArmOperation<ResourceGroupResource> operation = 
+            ArmOperation<ResourceGroupResource> operation =
                 await resourceGroups.CreateOrUpdateAsync(WaitUntil.Completed, resourceGroupName, resourceGroupData);
 
             _currentResourceGroup = operation.Value;
@@ -67,20 +68,20 @@ public class AzureResourceManager
         try
         {
             IotHubDescriptionCollection iotHubDescriptionCollection = _currentResourceGroup.GetIotHubDescriptions();
-            IotHubDescriptionData iotHubDescriptionData = new(location, new IotHubSkuInfo(GetIotHubSku(sku)) {Capacity = 1});
-            ArmOperation<IotHubDescriptionResource> operation = 
+            IotHubDescriptionData iotHubDescriptionData = new(location, new IotHubSkuInfo(GetIotHubSku(sku)) { Capacity = 1 });
+            ArmOperation<IotHubDescriptionResource> operation =
                 await iotHubDescriptionCollection.CreateOrUpdateAsync(WaitUntil.Completed, iotHubUniqueName, iotHubDescriptionData);
-            
+
             _currentIotHub = operation.Value;
-            
+
             return operation.Value;
         }
-        catch (Exception ex) 
+        catch (Exception ex)
         {
             Debug.Write(ex);
-            return null!; 
+            return null!;
         }
-        
+
     }
 
     public async Task<IotHubDescriptionResource> CreateIotHubAsync(ResourceGroupResource resourceGroup, string iotHubUniqueName, string location, string sku)
@@ -88,10 +89,10 @@ public class AzureResourceManager
         try
         {
             IotHubDescriptionCollection iotHubDescriptionCollection = resourceGroup.GetIotHubDescriptions();
-            IotHubDescriptionData iotHubDescriptionData = new(location, new IotHubSkuInfo(GetIotHubSku(sku)){Capacity = 1});
-            ArmOperation<IotHubDescriptionResource> operation = 
+            IotHubDescriptionData iotHubDescriptionData = new(location, new IotHubSkuInfo(GetIotHubSku(sku)) { Capacity = 1 });
+            ArmOperation<IotHubDescriptionResource> operation =
                 await iotHubDescriptionCollection.CreateOrUpdateAsync(WaitUntil.Completed, iotHubUniqueName, iotHubDescriptionData);
-        
+
             _currentIotHub = operation.Value;
 
             return operation.Value;
@@ -170,7 +171,7 @@ public class AzureResourceManager
         {
             "F1" => IotHubSku.F1,
             "S1" => IotHubSku.S1,
-            _ => IotHubSku.F1
+            _ => IotHubSku.S1
         };
     }
 }
