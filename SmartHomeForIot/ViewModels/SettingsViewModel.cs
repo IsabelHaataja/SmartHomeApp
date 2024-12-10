@@ -48,6 +48,13 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string? deviceConnectionString;
 
+    private string _statusMessage;
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set => SetProperty(ref _statusMessage, value);
+    }
+
     [RelayCommand]
     public async Task Configure()
     {
@@ -111,6 +118,8 @@ public partial class SettingsViewModel : ObservableObject
                     await _database.DeleteSettingsAsync(settings.Id);
                 }
 
+                _database.DeleteDatabaseAndFolderAsync();
+
                 _email.Send(EmailAddress, $"Device with ID: {deviceId} Deleted", "<h1>Your device has been successfully deleted!</h1>", "Your device has been deleted.");
 
                 // Reset state
@@ -118,6 +127,8 @@ public partial class SettingsViewModel : ObservableObject
                 ConfigureButtonText = "Configure";
 
                 Debug.WriteLine("Device deleted successfully.");
+
+                StatusMessage = "Device deleted. Restart app to configure device.";
 
             }
             else
