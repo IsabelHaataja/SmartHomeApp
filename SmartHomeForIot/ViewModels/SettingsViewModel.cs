@@ -86,8 +86,6 @@ public partial class SettingsViewModel : ObservableObject
         {
             if (IsConfigured)
             {
-                Debug.WriteLine("Retrieving DeviceId from the connection string...");
-
                 // Retrieve the DeviceId from the connection string
                 var deviceId = await _database.GetDeviceIdFromConnectionStringAsync();
 
@@ -96,8 +94,6 @@ public partial class SettingsViewModel : ObservableObject
                     Debug.WriteLine("DeviceId is null or empty. Aborting deletion.");
                     return;
                 }
-
-                Debug.WriteLine($"Attempting to delete DeviceId: {deviceId}");
 
                 var iotHubConnectionString = await _database.GetIotHubConnectionStringAsync();
 
@@ -108,8 +104,6 @@ public partial class SettingsViewModel : ObservableObject
                 }
 
                 await _iotDeviceManager.DeleteDeviceFromIoTHubAsync(deviceId, iotHubConnectionString);
-
-                Debug.WriteLine("Deleting settings...");
 
                 // Retrieve settings from the database
                 var settings = await _database.GetSettingsAsync();
@@ -126,10 +120,7 @@ public partial class SettingsViewModel : ObservableObject
                 IsConfigured = false;
                 ConfigureButtonText = "Configure";
 
-                Debug.WriteLine("Device deleted successfully.");
-
                 StatusMessage = "Device deleted. Restart app to configure device.";
-
             }
             else
             {
@@ -201,11 +192,9 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            Debug.WriteLine("Checking existing settings...");
             var settings = await _database.GetSettingsAsync();
             if (settings == null) 
             {
-                Debug.WriteLine("No existing settings found. Creating new settings...");
                 settings = new DataModels.DeviceSettings
                 {
                     Id = Guid.NewGuid().ToString().Split('-')[0],
@@ -220,12 +209,10 @@ public partial class SettingsViewModel : ObservableObject
                     await _azureRM.CreateIotHubAsync($"iothub-{settings.Id}", "westeurope", "F1");
                     iotHub = await _azureRM.GetIotHubInfoAsync();
                 }
-                Debug.WriteLine($"Generated new ID: {settings.Id} for Email: {EmailAddress}");
+
                 settings.IotHubConnectionString = iotHub.ConnectionString!;
-                Debug.WriteLine($"IoT Hub Connection String: {settings.IotHubConnectionString}");
 
                 var result = await _database.SaveSettingsAsync(settings);
-                Debug.WriteLine($"Save result: {result}");
 
                 return result == 1 ? true : false;
             }

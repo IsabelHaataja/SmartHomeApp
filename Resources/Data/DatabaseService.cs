@@ -26,7 +26,6 @@ public class DatabaseService : IDatabaseService
         }
 
         _dbPath = Path.Combine(_dbFolder, "Smarthome_database.db3");
-        Debug.WriteLine($"Database Path: {_dbPath}");
 
         _database = new SQLiteAsyncConnection(_dbPath);
     }
@@ -42,9 +41,6 @@ public class DatabaseService : IDatabaseService
         {
             var result = await _database.CreateTableAsync<DeviceSettings>();
 
-            Debug.WriteLine($"Table creation result: {result}");
-
-            Debug.WriteLine("DeviceSettings table created successfully.");
             _logger.LogInformation("DeviceSettings table created successfully.");
         }
         catch (Exception ex)
